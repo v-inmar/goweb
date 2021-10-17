@@ -1,14 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
 
-	handlers "github.com/v-inmar/goweb/handlers/errors"
-	m "github.com/v-inmar/goweb/models"
+	errorhandlers "github.com/v-inmar/goweb/handlers/errors"
+	handlers "github.com/v-inmar/goweb/handlers/routes"
 )
 
 func main() {
@@ -23,22 +22,29 @@ func main() {
 	router.HandleFunc("/test", func(rw http.ResponseWriter, r *http.Request) {
 		// Set the header
 		rw.Header().Set("Content-Type", "application/json")
+		rw.WriteHeader(http.StatusOK)
 
-		// set the payload and response data
-		rm := m.ResponseModel{
-			Status: "200 OK",
-			Payload: m.PayloadModel{
-				Payload: "API is working",
-			},
-		}
+		// // set the payload and response data
+		// rm := m.ResponseModel{
+		// 	Status: "200 OK",
+		// 	Payload: m.PayloadModel{
+		// 		Payload: "API is working",
+		// 	},
+		// }
 
-		// JSON encode the connection value and pass to ResponseWriter
-		json.NewEncoder(rw).Encode(rm)
+		// // JSON encode the connection value and pass to ResponseWriter
+		// json.NewEncoder(rw).Encode(rm)
 
 	}).Methods("GET")
 
+	// Get all todos
+	router.HandleFunc("/todos", handlers.GetAllTodos).Methods(http.MethodGet)
+
+	// Delete a todo item by id
+	router.HandleFunc("/todos/{id}", handlers.DeleteTodo).Methods(http.MethodDelete)
+
 	// Assign the NotFoundHandler (custom) to mux's NotFoundHandler
-	router.NotFoundHandler = http.HandlerFunc(handlers.NotFoundHandler)
+	router.NotFoundHandler = http.HandlerFunc(errorhandlers.NotFoundHandler)
 
 	// Run server with the router and log error if failed
 	log.Fatal(http.ListenAndServe(":5000", router))
