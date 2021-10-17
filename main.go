@@ -40,6 +40,9 @@ func main() {
 	// Get all todos
 	router.HandleFunc("/todos", handlers.GetAllTodos).Methods(http.MethodGet)
 
+	// Create todo
+	router.HandleFunc("/todos", handlers.CreateTodo).Methods(http.MethodPost)
+
 	// Get todo by id
 	router.HandleFunc("/todos/{id}", handlers.GetTodo).Methods(http.MethodGet)
 
