@@ -40,6 +40,9 @@ func main() {
 	// Get all todos
 	router.HandleFunc("/todos", handlers.GetAllTodos).Methods(http.MethodGet)
 
+	// Get todo by id
+	router.HandleFunc("/todos/{id}", handlers.GetTodo).Methods(http.MethodGet)
+
 	// Delete a todo item by id
 	router.HandleFunc("/todos/{id}", handlers.DeleteTodo).Methods(http.MethodDelete)
 
