@@ -1,11 +1,10 @@
-package main
+package appinit
 
 import (
 	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -16,12 +15,12 @@ type App struct {
 	Router *mux.Router
 }
 
-func (app *App) AppInit(user string, pw string, dbhost string, dbport int, dbname string) {
+func (app *App) AppInit(user string, pw string, dbhost string, dbport string, dbname string) {
 	cfg := mysql.Config{
 		User:   user,
 		Passwd: pw,
 		Net:    "tcp",
-		Addr:   dbhost + ":" + strconv.Itoa(dbport),
+		Addr:   dbhost + ":" + dbport,
 		DBName: dbname,
 	}
 	var err error
@@ -41,5 +40,10 @@ func (app *App) AppInit(user string, pw string, dbhost string, dbport int, dbnam
 }
 
 func (app *App) AppRun(addrWithPort string) {
-	log.Fatal(http.ListenAndServe(addrWithPort, app.Router))
+	fmt.Println("Server running at ", addrWithPort)
+	err := http.ListenAndServe(addrWithPort, app.Router)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
