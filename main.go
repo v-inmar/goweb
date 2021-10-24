@@ -23,6 +23,17 @@ func main() {
 	// Create instance of the App struct
 	app := a.App{}
 
+	// golang run main.go db make
+	// a way of auto creating the database using the given sql file
+	if len(os.Args) > 1 {
+		if os.Args[1] == "db" {
+			if os.Args[2] == "make" {
+				app.MakeDB(os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBHOST"), os.Getenv("DBPORT"))
+				os.Exit(1)
+			}
+		}
+	}
+
 	// Initliaze the app with connection to the db
 	app.AppInit(os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBHOST"), os.Getenv("DBPORT"), os.Getenv("DBNAME"))
 
@@ -40,6 +51,9 @@ func main() {
 		rw.Header().Set("Content-Type", "application/json")
 		rw.WriteHeader(http.StatusOK)
 	}).Methods("GET")
+
+	// Just a simple test
+	router.HandleFunc("/todos/test", handlers.GetAllTodosTst(app.DB))
 
 	// Get all todos
 	router.HandleFunc("/todos", handlers.GetAllTodos).Methods(http.MethodGet)
