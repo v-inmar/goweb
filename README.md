@@ -1,4 +1,8 @@
 ## Simple REST API with Go and Gorilla Mux
+## With MySQL
 
-It uses in-memory storage and will only persist throughout the lifetime
-of the server.
+### NO ORM
+
+**Under Construction**
+
+Just a simple rest API for a Todo List
