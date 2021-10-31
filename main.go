@@ -53,10 +53,10 @@ func main() {
 	}).Methods("GET")
 
 	// Just a simple test
-	router.HandleFunc("/todos/test", handlers.GetAllTodosTst(app.DB))
+	// router.HandleFunc("/todos/test", handlers.GetAllTodos(app.DB))
 
 	// Get all todos
-	router.HandleFunc("/todos", handlers.GetAllTodos).Methods(http.MethodGet)
+	router.HandleFunc("/todos", handlers.GetAllTodos(app.DB)).Methods(http.MethodGet)
 
 	// Create todo
 	router.HandleFunc("/todos", handlers.CreateTodo(app.DB)).Methods(http.MethodPost)
