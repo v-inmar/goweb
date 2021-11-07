@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS `todo_model`;
 CREATE TABLE `todo_model` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `date_created` datetime NOT NULL,
+  `date_deleted` datetime NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

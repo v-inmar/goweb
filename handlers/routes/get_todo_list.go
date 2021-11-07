@@ -30,7 +30,7 @@ func getAllTodoFromDB(db *sql.DB) ([]models.PublicTodoModel, error) {
 	// this looks better
 	var todos = []models.PublicTodoModel{}
 
-	todo_model_rows, err := db.Query("Select id FROM todo_model")
+	todo_model_rows, err := db.Query("Select id FROM todo_model where date_deleted is null")
 	if err != nil {
 		return nil, err
 	}

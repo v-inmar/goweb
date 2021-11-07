@@ -62,13 +62,14 @@ func main() {
 	router.HandleFunc("/todos", handlers.CreateTodo(app.DB)).Methods(http.MethodPost)
 
 	// Get todo by id
-	router.HandleFunc("/todos/{id}", handlers.GetTodo).Methods(http.MethodGet)
+	router.HandleFunc("/todos/{id}", handlers.GetTodo(app.DB)).Methods(http.MethodGet)
+	// router.HandleFunc("/todos/{id}", handlers.GetTodo).Methods(http.MethodGet)
 
 	// Update todo by id
 	router.HandleFunc("/todos/{id}", handlers.UpdateTodo).Methods(http.MethodPut)
 
 	// Delete a todo item by id
-	router.HandleFunc("/todos/{id}", handlers.DeleteTodo).Methods(http.MethodDelete)
+	router.HandleFunc("/todos/{id}", handlers.DeleteTodo(app.DB)).Methods(http.MethodDelete)
 
 	// Assign the NotFoundHandler (custom) to mux's NotFoundHandler
 	router.NotFoundHandler = http.HandlerFunc(errorhandlers.NotFoundHandler)
