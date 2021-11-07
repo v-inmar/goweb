@@ -19,25 +19,16 @@ Just a simple rest API for a Todo List
 | /todos/{id} |  DEL | Delete a todo item |
 
 
-#### Create new todo item request body signature
+#### Create new and Update todo item request body signature
 
 ```json
 {
-	"title": "<string value: cannot empty or missing>",
-	"body": "<string value>: can be empty"
+	"title": "<string value>",
+	"body": "<string value>"
 }
 
 ```
 
-#### Update todo item request body signature
-
-```json
-{
-	"title": "<string value: will be ignored if empty or missing>",
-	"body": "<string value>: can be empty"
-}
-
-```
 
 
 ### Bugs :poop: (On-going)
