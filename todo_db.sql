@@ -10,6 +10,7 @@ DROP TABLE IF EXISTS `todo_model`;
 CREATE TABLE `todo_model` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `date_created` datetime NOT NULL,
+  `date_updated` datetime NULL,
   `date_deleted` datetime NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -63,7 +64,7 @@ DROP TABLE IF EXISTS `todo_body_linker_model`;
 CREATE TABLE `todo_body_linker_model` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `date_created` datetime NOT NULL,
-  `date_updated` datetime NOT NULL,
+  `date_updated` datetime NULL,
   `todo_id` bigint NOT NULL,
   `body_id` bigint DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -83,7 +84,6 @@ DROP TABLE IF EXISTS `todo_pid_linker_model`;
 CREATE TABLE `todo_pid_linker_model` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `date_created` datetime NOT NULL,
-  `date_updated` datetime NOT NULL,
   `todo_id` bigint NOT NULL,
   `pid_id` bigint NOT NULL,
   PRIMARY KEY (`id`),
@@ -101,7 +101,7 @@ DROP TABLE IF EXISTS `todo_title_linker_model`;
 CREATE TABLE `todo_title_linker_model` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `date_created` datetime NOT NULL,
-  `date_updated` datetime NOT NULL,
+  `date_updated` datetime NULL,
   `todo_id` bigint NOT NULL,
   `title_id` bigint NOT NULL,
   PRIMARY KEY (`id`),

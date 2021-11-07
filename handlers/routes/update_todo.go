@@ -102,7 +102,7 @@ func UpdateTodo(db *sql.DB) http.HandlerFunc {
 func updateDB(db *sql.DB, reqBody *models.RequestBody, todo_id *int)(error){
 	// helper function for when something failed
 	fail := func(err error) (error) {
-		log.Fatal(err)
+		log.Printf("%v", err)
 		return err
 	}
 
@@ -202,6 +202,13 @@ func updateDB(db *sql.DB, reqBody *models.RequestBody, todo_id *int)(error){
 
 	// Update the linker model
 	_, err = dbSession.Exec("update todo_body_linker_model set date_updated=? where todo_id=?", dt, todo_id)
+	if err != nil {
+		return fail(err)
+	}
+
+
+	// Update the todo model's date_updated column
+	_, err = dbSession.Exec("update todo_model set date_updated=? where id=?", dt, todo_id)
 	if err != nil {
 		return fail(err)
 	}

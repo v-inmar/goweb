@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/v-inmar/goweb/models"
@@ -30,8 +31,9 @@ func getAllTodoFromDB(db *sql.DB) ([]models.PublicTodoModel, error) {
 	// this looks better
 	var todos = []models.PublicTodoModel{}
 
-	todo_model_rows, err := db.Query("Select id FROM todo_model where date_deleted is null")
+	todo_model_rows, err := db.Query("select id FROM todo_model where date_deleted is null")
 	if err != nil {
+		log.Fatal(err)
 		return nil, err
 	}
 
@@ -42,6 +44,7 @@ func getAllTodoFromDB(db *sql.DB) ([]models.PublicTodoModel, error) {
 		if err := todo_model_rows.Scan(&todo_model_id); err != nil {
 			continue
 		}
+
 
 		linker_pid_row := db.QueryRow("select pid_id from todo_pid_linker_model where todo_id = ?", todo_model_id)
 		var linker_pid_model_id int
@@ -55,33 +58,43 @@ func getAllTodoFromDB(db *sql.DB) ([]models.PublicTodoModel, error) {
 			continue
 		}
 
-		linker_title_row := db.QueryRow("select title_id from todo_title_linker_model where todo_id = ?", todo_model_id)
-		var linker_title_model_id int
-		if err := linker_title_row.Scan(&linker_title_model_id); err != nil {
+		// use of the helper function from the get_todo handler
+		t, err := getTodoFromDB(db, &todo_model_id, &pid)
+		if err != nil {
 			continue
 		}
 
-		title_row := db.QueryRow("select value from title_model where id = ?", linker_title_model_id)
-		var title string
-		if err := title_row.Scan(&title); err != nil {
-			continue
-		}
+		// linker_title_row := db.QueryRow("select title_id from todo_title_linker_model where todo_id = ?", todo_model_id)
+		// var linker_title_model_id int
+		// if err := linker_title_row.Scan(&linker_title_model_id); err != nil {
+		// 	continue
+		// }
 
-		linker_body_row := db.QueryRow("select body_id from todo_body_linker_model where todo_id = ?", todo_model_id)
-		var linker_body_model_id int
-		if err := linker_body_row.Scan(&linker_body_model_id); err != nil {
-			continue
-		}
+		// title_row := db.QueryRow("select value from title_model where id = ?", linker_title_model_id)
+		// var title string
+		// if err := title_row.Scan(&title); err != nil {
+		// 	continue
+		// }
 
-		body_row := db.QueryRow("select value from body_model where id = ?", linker_body_model_id)
-		var body string
-		if err := body_row.Scan(&body); err != nil {
-			continue
-		}
-		var t models.PublicTodoModel
-		t.PID = pid
-		t.Title = title
-		t.Body = body
+		// linker_body_row := db.QueryRow("select body_id from todo_body_linker_model where todo_id = ?", todo_model_id)
+		// var linker_body_model_id int
+		// if err := linker_body_row.Scan(&linker_body_model_id); err != nil {
+		// 	continue
+		// }
+
+		// body_row := db.QueryRow("select value from body_model where id = ?", linker_body_model_id)
+		// var body string
+		// if err := body_row.Scan(&body); err != nil {
+		// 	continue
+		// }
+
+		
+		// var t models.PublicTodoModel
+		// t.PID = pid
+		// t.Title = title
+		// t.Body = body
+		// t.Created = todo_model_date.Format(time.RFC822)
+		// t.Updated = ""
 
 		todos = append(todos, t)
 

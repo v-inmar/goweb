@@ -23,6 +23,7 @@ func (app *App) AppInit(user string, pw string, dbhost string, dbport string, db
 		Net:    "tcp",
 		Addr:   dbhost + ":" + dbport,
 		DBName: dbname,
+		ParseTime: true, // matches Date and Datetime to time.Time
 	}
 	var err error
 	app.DB, err = sql.Open("mysql", cfg.FormatDSN())

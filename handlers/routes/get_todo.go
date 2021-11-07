@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/v-inmar/goweb/models"
@@ -74,6 +75,13 @@ func GetTodo(db *sql.DB) http.HandlerFunc{
 
 func getTodoFromDB(db *sql.DB, todo_id *int, pid *string)(models.PublicTodoModel, error){
 
+	var date_created time.Time
+	var date_updated sql.NullTime // Initially all date_updated columns are sql null
+	todo_row := db.QueryRow("select date_created, date_updated from todo_model where id=?", todo_id)
+	if err := todo_row.Scan(&date_created, &date_updated); err != nil {
+		return models.PublicTodoModel{}, err
+	}
+
 	// -- deals with title
 	linker_title_row := db.QueryRow("select title_id from todo_title_linker_model where todo_id=?", todo_id)
 	var linker_title_title_id int
@@ -101,10 +109,20 @@ func getTodoFromDB(db *sql.DB, todo_id *int, pid *string)(models.PublicTodoModel
 		return models.PublicTodoModel{}, err
 	}
 
+	// Check the date_updated for mysql null value
+	var updated_date_value string
+	if date_updated.Valid {
+		updated_date_value = date_updated.Time.Format(time.RFC822)
+	}else{
+		updated_date_value = ""
+	}
+
 	return models.PublicTodoModel{
 		PID: *pid,
 		Body: body,
 		Title: title,
+		Created: date_created.Format(time.RFC822),
+		Updated: updated_date_value,
 	}, nil
 
 

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -63,6 +64,7 @@ NOTE: Probably sql stored procedure can help here
 func insertIntoDB(db *sql.DB, reqBody *models.RequestBody) (models.PublicTodoModel, error) {
 	// helper function for when something failed
 	fail := func(err error) (models.PublicTodoModel, error) {
+		log.Printf("%v",err)
 		return models.PublicTodoModel{}, err
 	}
 
@@ -124,7 +126,7 @@ func insertIntoDB(db *sql.DB, reqBody *models.RequestBody) (models.PublicTodoMod
 
 				// create todo pid linker
 				// result is not needed
-				_, err = dbSession.Exec("insert into todo_pid_linker_model (todo_id, pid_id, date_created, date_updated) values (?,?,?,?)", todo_id, pid_id, dt, dt)
+				_, err = dbSession.Exec("insert into todo_pid_linker_model (todo_id, pid_id, date_created) values (?,?,?)", todo_id, pid_id, dt)
 				if err != nil {
 					return fail(err)
 				}
@@ -151,7 +153,7 @@ func insertIntoDB(db *sql.DB, reqBody *models.RequestBody) (models.PublicTodoMod
 				}
 
 				// create todo and title linker
-				_, err = dbSession.Exec("insert into todo_title_linker_model (todo_id, title_id, date_created, date_updated) values (?,?,?,?)", todo_id, title_id, dt, dt)
+				_, err = dbSession.Exec("insert into todo_title_linker_model (todo_id, title_id, date_created) values (?,?,?)", todo_id, title_id, dt)
 				if err != nil {
 					return fail(err)
 				}
@@ -169,7 +171,7 @@ func insertIntoDB(db *sql.DB, reqBody *models.RequestBody) (models.PublicTodoMod
 				}
 
 				// create todo body linker item
-				_, err = dbSession.Exec("insert into todo_body_linker_model (todo_id, body_id, date_created, date_updated) values (?,?,?,?)", todo_id, body_id, dt, dt)
+				_, err = dbSession.Exec("insert into todo_body_linker_model (todo_id, body_id, date_created) values (?,?,?)", todo_id, body_id, dt)
 				if err != nil {
 					return fail(err)
 				}
@@ -178,13 +180,16 @@ func insertIntoDB(db *sql.DB, reqBody *models.RequestBody) (models.PublicTodoMod
 					return fail(err)
 				}
 
-				// Change this to a better approach
 				var publicModel models.PublicTodoModel
 				publicModel.PID = pidString
 				publicModel.Title = reqBody.Title
 				publicModel.Body = reqBody.Body
+				publicModel.Created = dt.Format(time.RFC822)
+				publicModel.Updated = ""
 				return publicModel, nil
 
+			}else{
+				return fail(err)
 			}
 		}
 	}
