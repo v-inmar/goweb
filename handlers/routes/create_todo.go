@@ -10,11 +10,6 @@ import (
 	"github.com/v-inmar/goweb/models"
 )
 
-type requestBody struct {
-	Title string `json:"title"`
-	Body  string `json:"body"`
-}
-
 // Handles the create route
 func CreateTodo(db *sql.DB) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
@@ -22,7 +17,7 @@ func CreateTodo(db *sql.DB) http.HandlerFunc {
 		// Set content type
 		rw.Header().Set("Content-Type", "application/json")
 
-		reqBody := requestBody{}
+		reqBody := models.RequestBody{}
 		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 			// Empty request body was sent
 			if err.Error() == "EOF" {
@@ -36,7 +31,7 @@ func CreateTodo(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Check for empty json request body
-		if (reqBody == requestBody{}) {
+		if (reqBody == models.RequestBody{}) {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
@@ -65,7 +60,7 @@ Insert new todo into the database
 NOTE: Glimpse of no ORM help
 NOTE: Probably sql stored procedure can help here
 */
-func insertIntoDB(db *sql.DB, reqBody *requestBody) (models.PublicTodoModel, error) {
+func insertIntoDB(db *sql.DB, reqBody *models.RequestBody) (models.PublicTodoModel, error) {
 	// helper function for when something failed
 	fail := func(err error) (models.PublicTodoModel, error) {
 		return models.PublicTodoModel{}, err
