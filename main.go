@@ -52,23 +52,22 @@ func main() {
 		rw.WriteHeader(http.StatusOK)
 	}).Methods("GET")
 
-	// Just a simple test
-	// router.HandleFunc("/todos/test", handlers.GetAllTodos(app.DB))
+	todo_router := router.PathPrefix("/todos").Subrouter()
 
 	// Get all todos
-	router.HandleFunc("/todos", handlers.GetAllTodos(app.DB)).Methods(http.MethodGet)
+	todo_router.HandleFunc("", handlers.GetAllTodos(app.DB)).Methods(http.MethodGet)
 
 	// Create todo
-	router.HandleFunc("/todos", handlers.CreateTodo(app.DB)).Methods(http.MethodPost)
+	todo_router.HandleFunc("", handlers.CreateTodo(app.DB)).Methods(http.MethodPost)
 
 	// Get todo by id
-	router.HandleFunc("/todos/{id}", handlers.GetTodo(app.DB)).Methods(http.MethodGet)
+	todo_router.HandleFunc("/{id}", handlers.GetTodo(app.DB)).Methods(http.MethodGet)
 
 	// Update todo by id
-	router.HandleFunc("/todos/{id}", handlers.UpdateTodo(app.DB)).Methods(http.MethodPut)
+	todo_router.HandleFunc("/{id}", handlers.UpdateTodo(app.DB)).Methods(http.MethodPut)
 
 	// Delete a todo item by id
-	router.HandleFunc("/todos/{id}", handlers.DeleteTodo(app.DB)).Methods(http.MethodDelete)
+	todo_router.HandleFunc("/{id}", handlers.DeleteTodo(app.DB)).Methods(http.MethodDelete)
 
 	// Assign the NotFoundHandler (custom) to mux's NotFoundHandler
 	router.NotFoundHandler = http.HandlerFunc(errorhandlers.NotFoundHandler)
