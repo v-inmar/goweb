@@ -6,10 +6,7 @@ import (
 	"os"
 
 	"github.com/joho/godotenv"
-
-	a "github.com/v-inmar/goweb/appinit"
 	errorhandlers "github.com/v-inmar/goweb/handlers/errors"
-	handlers "github.com/v-inmar/goweb/handlers/routes"
 )
 
 func main() {
@@ -21,7 +18,7 @@ func main() {
 	}
 
 	// Create instance of the App struct
-	app := a.App{}
+	app := App{}
 
 	// golang run main.go db make
 	// a way of auto creating the database using the given sql file
@@ -35,7 +32,7 @@ func main() {
 	}
 
 	// Initliaze the app with connection to the db
-	app.AppInit(os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBHOST"), os.Getenv("DBPORT"), os.Getenv("DBNAME"))
+	app.Initialize(os.Getenv("DBUSER"), os.Getenv("DBPASS"), os.Getenv("DBHOST"), os.Getenv("DBPORT"), os.Getenv("DBNAME"))
 
 	// Initialize a new mux router
 	// router := mux.NewRouter()
@@ -74,6 +71,6 @@ func main() {
 
 	// Run server with the router and log error if failed
 	// log.Fatal(http.ListenAndServe(":5000", router))
-	app.AppRun(":5000") // app.go AppRun that runs the server
+	app.Run(":5000") // app.go AppRun that runs the server
 
 }
