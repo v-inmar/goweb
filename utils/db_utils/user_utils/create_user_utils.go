@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
+	utils "github.com/v-inmar/goweb/utils/hash_utils"
 )
 
 /*
@@ -153,7 +155,28 @@ func CreateUser(db *sql.DB, firstname string, lastname string, email string, pas
 					return failed(err)
 				}
 
+				// hashed the password
+				hashed_string, err := utils.PasswordHash(password)
+				if err != nil{
+					return failed(err)
+				}
 
+				// create password
+				pword_model_result, err := dbSession.Exec("insert into password_model (value, date_created) values (?,?)", hashed_string, dt)
+				if err != nil{
+					return failed(err)
+				}
+
+				pword_id, err := pword_model_result.LastInsertId()
+				if err != nil {
+					return failed(err)
+				}
+
+				// create user and password linker
+				_, err = dbSession.Exec("insert into user_password_linker_model (user_id, password_id, date_created) values (?,?,?)", user_id, pword_id, dt)
+				if err != nil {
+					return failed(err)
+				}
 
 				if err := dbSession.Commit(); err != nil {
 					return failed(err)
