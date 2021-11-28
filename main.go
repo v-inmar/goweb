@@ -7,7 +7,7 @@ import (
 
 	"github.com/joho/godotenv"
 	errorhandlers "github.com/v-inmar/goweb/handlers/errors"
-	todos "github.com/v-inmar/goweb/handlers/routes/todo_routes"
+	todos "github.com/v-inmar/goweb/handlers/todo_handlers"
 )
 
 func main() {
