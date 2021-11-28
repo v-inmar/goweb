@@ -7,7 +7,8 @@ import (
 
 	"github.com/joho/godotenv"
 	errorhandlers "github.com/v-inmar/goweb/handlers/errors"
-	todos "github.com/v-inmar/goweb/handlers/todo_handlers"
+
+	todo_routes "github.com/v-inmar/goweb/routes"
 )
 
 func main() {
@@ -50,22 +51,8 @@ func main() {
 		rw.WriteHeader(http.StatusOK)
 	}).Methods("GET")
 
-	todo_router := router.PathPrefix("/todos").Subrouter()
-
-	// Get all todos
-	todo_router.HandleFunc("", todos.GetAllTodos(app.DB)).Methods(http.MethodGet)
-
-	// Create todo
-	todo_router.HandleFunc("", todos.CreateTodo(app.DB)).Methods(http.MethodPost)
-
-	// Get todo by id
-	todo_router.HandleFunc("/{id}", todos.GetTodo(app.DB)).Methods(http.MethodGet)
-
-	// Update todo by id
-	todo_router.HandleFunc("/{id}", todos.UpdateTodo(app.DB)).Methods(http.MethodPut)
-
-	// Delete a todo item by id
-	todo_router.HandleFunc("/{id}", todos.DeleteTodo(app.DB)).Methods(http.MethodDelete)
+	// Create todos sub routers
+	todo_routes.TodoRoutes(app.Router, app.DB, "/todos")
 
 	// Assign the NotFoundHandler (custom) to mux's NotFoundHandler
 	router.NotFoundHandler = http.HandlerFunc(errorhandlers.NotFoundHandler)
