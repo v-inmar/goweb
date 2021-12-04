@@ -38,7 +38,7 @@ func (m *EmailLinkerModel) Create(dbSession *sql.Tx, userID, emailID int64) erro
 	return nil
 }
 
-func (m *EmailLinkerModel) ReadById(db *sql.DB, id int64) error {
+func (m EmailLinkerModel) ReadById(db *sql.DB, id int64) error {
 	err := db.QueryRow("select * from user_email_linker_model where id=?", id).Scan(&m.ID, &m.UserID, &m.EmailID, &m.DateCreated)
 	if err != nil{
 		if err != sql.ErrNoRows{
@@ -48,7 +48,7 @@ func (m *EmailLinkerModel) ReadById(db *sql.DB, id int64) error {
 	return nil
 }
 
-func (m *EmailLinkerModel) ReadByUserId(db *sql.DB, userID int64) error {
+func (m EmailLinkerModel) ReadByUserId(db *sql.DB, userID int64) error {
 	err := db.QueryRow("select * from user_email_linker_model where user_id=?", userID).Scan(&m.ID, &m.UserID, &m.EmailID, &m.DateCreated, &m.DateUpdated)
 	if err != nil{
 		if err != sql.ErrNoRows{
@@ -58,7 +58,7 @@ func (m *EmailLinkerModel) ReadByUserId(db *sql.DB, userID int64) error {
 	return nil
 }
 
-func (m *EmailLinkerModel) ReadByEmailId(db *sql.DB, emailID int64) error {
+func (m EmailLinkerModel) ReadByEmailId(db *sql.DB, emailID int64) error {
 	err := db.QueryRow("select * from user_email_linker_model where email_id=?", emailID).Scan(&m.ID, &m.UserID, &m.EmailID, &m.DateCreated, &m.DateUpdated)
 	if err != nil{
 		if err != sql.ErrNoRows{

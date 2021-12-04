@@ -12,12 +12,12 @@ type UPIDLinkerModel struct {
 	DateCreated time.Time
 }
 
-func (m *UPIDLinkerModel) Create(db *sql.DB, userID, upidID int64) error {
-	dbSession, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer dbSession.Rollback()
+func (m *UPIDLinkerModel) Create(dbSession *sql.Tx, userID, upidID int64) error {
+	// dbSession, err := db.Begin()
+	// if err != nil {
+	// 	return err
+	// }
+	// defer dbSession.Rollback()
 
 	dt := time.Now().UTC()
 
@@ -31,9 +31,9 @@ func (m *UPIDLinkerModel) Create(db *sql.DB, userID, upidID int64) error {
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
+	// if err := dbSession.Commit(); err != nil{
+	// 	return err
+	// }
 
 	m.ID = insertedID
 	m.UserID = userID

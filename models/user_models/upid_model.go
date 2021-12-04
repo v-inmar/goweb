@@ -11,12 +11,12 @@ type UPIDModel struct {
 	DateCreated time.Time
 }
 
-func (m *UPIDModel) Create(db *sql.DB, value string) error {
-	dbSession, err := db.Begin()
-	if err != nil {
-		return err
-	}
-	defer dbSession.Rollback()
+func (m *UPIDModel) Create(dbSession *sql.Tx, value string) error {
+	// dbSession, err := db.Begin()
+	// if err != nil {
+	// 	return err
+	// }
+	// defer dbSession.Rollback()
 
 	dt := time.Now().UTC()
 	model, err := dbSession.Exec("insert into upid_model (value, date_created) values (?, ?)", value, dt)
@@ -29,9 +29,9 @@ func (m *UPIDModel) Create(db *sql.DB, value string) error {
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
+	// if err := dbSession.Commit(); err != nil{
+	// 	return err
+	// }
 
 	m.ID = insertedID
 	m.Value = value
