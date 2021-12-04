@@ -11,7 +11,7 @@ type UPIDModel struct {
 	DateCreated time.Time
 }
 
-func (m *UPIDModel) create(db *sql.DB, value string) error {
+func (m *UPIDModel) Create(db *sql.DB, value string) error {
 	dbSession, err := db.Begin()
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (m *UPIDModel) create(db *sql.DB, value string) error {
 	return nil
 }
 
-func (m *UPIDModel) readByValue(db *sql.DB, value string) error {
+func (m *UPIDModel) ReadByValue(db *sql.DB, value string) error {
 	err := db.QueryRow("select * from upid_model where value=?", value).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{
@@ -49,7 +49,7 @@ func (m *UPIDModel) readByValue(db *sql.DB, value string) error {
 	return nil
 }
 
-func (m *UPIDModel) readById(db *sql.DB, id int64) error {
+func (m *UPIDModel) ReadById(db *sql.DB, id int64) error {
 	err := db.QueryRow("select * from upid_model where id=?", id).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{

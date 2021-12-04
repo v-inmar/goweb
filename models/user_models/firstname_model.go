@@ -11,7 +11,7 @@ type FirstnameModel struct {
 	DateCreated time.Time
 }
 
-func (m *FirstnameModel) create(db *sql.DB, value string) error {
+func (m *FirstnameModel) Create(db *sql.DB, value string) error {
 	dbSession, err := db.Begin()
 	if err != nil{
 		return err
@@ -39,7 +39,7 @@ func (m *FirstnameModel) create(db *sql.DB, value string) error {
 	return nil
 }
 
-func (m *FirstnameModel) readByValue(db *sql.DB, value string) error {
+func (m *FirstnameModel) ReadByValue(db *sql.DB, value string) error {
 	err := db.QueryRow("select * from firstname_model where value=?", value).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{
@@ -49,7 +49,7 @@ func (m *FirstnameModel) readByValue(db *sql.DB, value string) error {
 	return nil
 }
 
-func (m *FirstnameModel) readById(db *sql.DB, id int64) error {
+func (m *FirstnameModel) ReadById(db *sql.DB, id int64) error {
 	err := db.QueryRow("select * from firstname_model where id=?", id).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{

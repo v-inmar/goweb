@@ -11,13 +11,12 @@ type PasswordModel struct {
 	DateCreated time.Time
 }
 
-func (m *PasswordModel) create(db *sql.DB, value string) error{
-	// Transaction is needed to be able to rollback if any error
-	dbSession, err := db.Begin()
-	if err != nil{
-		return err
-	}
-	defer dbSession.Rollback()
+func (m *PasswordModel) Create(dbSession *sql.Tx, value string) error{
+	// dbSession, err := db.Begin()
+	// if err != nil{
+	// 	return err
+	// }
+	// defer dbSession.Rollback()
 
 	dt := time.Now().UTC()
 
@@ -31,9 +30,9 @@ func (m *PasswordModel) create(db *sql.DB, value string) error{
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
+	// if err := dbSession.Commit(); err != nil{
+	// 	return err
+	// }
 
 	m.ID = insertedID
 	m.Value = value
@@ -41,7 +40,7 @@ func (m *PasswordModel) create(db *sql.DB, value string) error{
 	return nil
 }
 
-func (m *PasswordModel) readById(db *sql.DB, id int64)error{
+func (m *PasswordModel) ReadById(db *sql.DB, id int64)error{
 	err := db.QueryRow("select * from password_model where id=?", id).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil{
 		if err != sql.ErrNoRows{

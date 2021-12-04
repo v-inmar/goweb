@@ -10,12 +10,13 @@ type UserModel struct{
 	DateCreated time.Time
 }
 
-func (m *UserModel) create(db *sql.DB) error {
-	dbSession, err := db.Begin()
-	if err != nil{
-		return err
-	}
-	defer dbSession.Rollback()
+// Pass in transaction to allow single rollback when any creating user
+func (m *UserModel) Create(dbSession *sql.Tx) error {
+	// dbSession, err := db.Begin()
+	// if err != nil{
+	// 	return err
+	// }
+	// defer dbSession.Rollback()
 
 	dt := time.Now().UTC()
 	model, err := dbSession.Exec("insert into user_model (date_created) values (?)", dt)
@@ -28,16 +29,16 @@ func (m *UserModel) create(db *sql.DB) error {
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
+	// if err := dbSession.Commit(); err != nil{
+	// 	return err
+	// }
 
 	m.ID = insertedID
 	m.DateCreated = dt
 	return nil
 }
 
-func (m *UserModel) readById(db *sql.DB, id int64) error {
+func (m *UserModel) ReadById(db *sql.DB, id int64) error {
 	err := db.QueryRow("select * from user_model where id=?", id).Scan(&m.ID, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{

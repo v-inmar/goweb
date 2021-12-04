@@ -1,4 +1,4 @@
-package utils
+package hash_utils
 
 import "golang.org/x/crypto/bcrypt"
 

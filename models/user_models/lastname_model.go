@@ -13,12 +13,12 @@ type LastnameModel struct {
 
 
 
-func (m *LastnameModel) create(db *sql.DB, value string) error {
-	dbSession, err := db.Begin()
-	if err != nil{
-		return err
-	}
-	defer dbSession.Rollback()
+func (m *LastnameModel) Create(dbSession *sql.Tx, value string) error {
+	// dbSession, err := db.Begin()
+	// if err != nil{
+	// 	return err
+	// }
+	// defer dbSession.Rollback()
 
 	dt := time.Now().UTC()
 
@@ -32,16 +32,16 @@ func (m *LastnameModel) create(db *sql.DB, value string) error {
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
+	// if err := dbSession.Commit(); err != nil{
+	// 	return err
+	// }
 	m.ID = insertedID
 	m.Value = value
 	m.DateCreated = dt
 	return nil
 }
 
-func (m *LastnameModel) readByValue(db *sql.DB, value string) error {
+func (m *LastnameModel) ReadByValue(db *sql.DB, value string) error {
 	err := db.QueryRow("select * from lastname_model where value=?", value).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{
@@ -51,7 +51,7 @@ func (m *LastnameModel) readByValue(db *sql.DB, value string) error {
 	return nil
 }
 
-func (m *LastnameModel) readById(db *sql.DB, id int64) error {
+func (m *LastnameModel) ReadById(db *sql.DB, id int64) error {
 	err := db.QueryRow("select * from lastname_model where id=?", id).Scan(&m.ID, &m.Value, &m.DateCreated)
 	if err != nil {
 		if err != sql.ErrNoRows{

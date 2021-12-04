@@ -1,4 +1,4 @@
-package models
+package user_linker_models
 
 import (
 	"database/sql"
@@ -13,12 +13,12 @@ type PasswordLinkerModel struct {
 	DateUpdated time.Time
 }
 
-func (m *PasswordLinkerModel) create(db *sql.DB, userID, passwordID int64) error {
-	dbSession, err := db.Begin()
-	if err != nil{
-		return err
-	}
-	defer dbSession.Rollback()
+func (m *PasswordLinkerModel) Create(dbSession *sql.Tx, userID, passwordID int64) error {
+	// dbSession, err := db.Begin()
+	// if err != nil{
+	// 	return err
+	// }
+	// defer dbSession.Rollback()
 	dt := time.Now().UTC()
 
 
@@ -32,9 +32,9 @@ func (m *PasswordLinkerModel) create(db *sql.DB, userID, passwordID int64) error
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
+	// if err := dbSession.Commit(); err != nil{
+	// 	return err
+	// }
 
 	m.ID = insertedID
 	m.UserID = userID
@@ -43,7 +43,7 @@ func (m *PasswordLinkerModel) create(db *sql.DB, userID, passwordID int64) error
 	return nil
 }
 
-func (m *PasswordLinkerModel) readById(db *sql.DB, id int64) error {
+func (m *PasswordLinkerModel) ReadById(db *sql.DB, id int64) error {
 	model := db.QueryRow("select * from user_password_linker_model where id=?", id)
 	if err := model.Scan(&m.ID, &m.UserID, &m.PasswordID, &m.DateCreated, &m.DateUpdated); err != nil{
 		if err != sql.ErrNoRows{
@@ -54,7 +54,7 @@ func (m *PasswordLinkerModel) readById(db *sql.DB, id int64) error {
 
 }
 
-func (m *PasswordLinkerModel) readByUserId(db *sql.DB, userID int64) error {
+func (m *PasswordLinkerModel) ReadByUserId(db *sql.DB, userID int64) error {
 	model := db.QueryRow("select * from user_password_linker_model where user_id=?", userID)
 	if err := model.Scan(&m.ID, &m.UserID, &m.PasswordID, &m.DateCreated, &m.DateUpdated); err != nil{
 		if err != sql.ErrNoRows{

@@ -1,4 +1,4 @@
-package models
+package user_linker_models
 
 import (
 	"database/sql"
@@ -12,7 +12,7 @@ type UPIDLinkerModel struct {
 	DateCreated time.Time
 }
 
-func (m *UPIDLinkerModel) create(db *sql.DB, userID, upidID int64) error {
+func (m *UPIDLinkerModel) Create(db *sql.DB, userID, upidID int64) error {
 	dbSession, err := db.Begin()
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (m *UPIDLinkerModel) create(db *sql.DB, userID, upidID int64) error {
 }
 
 
-func (m *UPIDLinkerModel) readById(db *sql.DB, id int64) error {
+func (m *UPIDLinkerModel) ReadById(db *sql.DB, id int64) error {
 	err := db.QueryRow("select * from user_upid_linker_model where id=?", id).Scan(&m.ID, &m.UserID, &m.UpidID, &m.DateCreated)
 	if err != nil{
 		if err != sql.ErrNoRows{
@@ -53,7 +53,7 @@ func (m *UPIDLinkerModel) readById(db *sql.DB, id int64) error {
 	return nil
 }
 
-func (m *UPIDLinkerModel) readByUserId(db *sql.DB, userID int64) error {
+func (m *UPIDLinkerModel) ReadByUserId(db *sql.DB, userID int64) error {
 	err := db.QueryRow("select * from user_upid_linker_model where user_id=?", userID).Scan(&m.ID, &m.UserID, &m.UpidID, &m.DateCreated)
 	if err != nil{
 		if err != sql.ErrNoRows{
@@ -63,7 +63,7 @@ func (m *UPIDLinkerModel) readByUserId(db *sql.DB, userID int64) error {
 	return nil
 }
 
-func (m *UPIDLinkerModel) readByUPIDId(db *sql.DB, upidID int64) error {
+func (m *UPIDLinkerModel) ReadByUPIDId(db *sql.DB, upidID int64) error {
 	err := db.QueryRow("select * from user_upid_linker_model where upid_id=?", upidID).Scan(&m.ID, &m.UserID, &m.UpidID, &m.DateCreated)
 	if err != nil{
 		if err != sql.ErrNoRows{
