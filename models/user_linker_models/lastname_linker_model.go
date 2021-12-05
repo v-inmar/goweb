@@ -13,14 +13,14 @@ type LastnameLinkerModel struct {
 	DateUpdated time.Time
 }
 
-func (m *LastnameLinkerModel) Create(dbSession *sql.Tx, userID, firstnameID int64) error {
+func (m *LastnameLinkerModel) Create(dbSession *sql.Tx, userID, lastnameID int64) error {
 	// dbSession, err := db.Begin()
 	// if err != nil{
 	// 	return err
 	// }
 	// defer dbSession.Rollback()
 	dt := time.Now().UTC()
-	model, err := dbSession.Exec("insert into user_lastname_linker_model (user_id, firstname_id, date_created) values (?,?,?)", userID, firstnameID, dt)
+	model, err := dbSession.Exec("insert into user_lastname_linker_model (user_id, lastname_id, date_created) values (?,?,?)", userID, lastnameID, dt)
 	if err != nil{
 		return err
 	}
@@ -36,7 +36,7 @@ func (m *LastnameLinkerModel) Create(dbSession *sql.Tx, userID, firstnameID int6
 
 	m.ID = insertedID
 	m.UserID = userID
-	m.LastnameID = firstnameID
+	m.LastnameID = lastnameID
 	m.DateCreated = dt
 	return nil
 }

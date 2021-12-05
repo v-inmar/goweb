@@ -11,12 +11,7 @@ type FirstnameModel struct {
 	DateCreated time.Time
 }
 
-func (m *FirstnameModel) Create(db *sql.DB, value string) error {
-	dbSession, err := db.Begin()
-	if err != nil{
-		return err
-	}
-	defer dbSession.Rollback()
+func (m *FirstnameModel) Create(dbSession *sql.Tx, value string) error {
 
 	dt := time.Now().UTC()
 
@@ -30,9 +25,6 @@ func (m *FirstnameModel) Create(db *sql.DB, value string) error {
 		return err
 	}
 
-	if err := dbSession.Commit(); err != nil{
-		return err
-	}
 	m.ID = insertedID
 	m.Value = value
 	m.DateCreated = dt
