@@ -8,6 +8,7 @@ import (
 
 func LoginAuth(db *sql.DB) http.HandlerFunc{
 	return func(rw http.ResponseWriter, r *http.Request) {
+		// needs implementation
 		log.Fatal("Implementation needed")
 	}
 }
