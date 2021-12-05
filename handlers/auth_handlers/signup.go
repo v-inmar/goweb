@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/v-inmar/goweb/models"
 	"github.com/v-inmar/goweb/models/user_linker_models"
 	"github.com/v-inmar/goweb/models/user_models"
 	"github.com/v-inmar/goweb/utils/hash_utils"
+	"github.com/v-inmar/goweb/utils/jwt_utils"
 )
 
 func SignupAuth(db *sql.DB) http.HandlerFunc{
@@ -175,7 +178,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 
 		// ### UPID Model ### //
 		
-		
+		var upid string
 		count := 0
 		upidCreateSuccess := false
 		// this will only run it 5 times
@@ -184,7 +187,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 			upidModel := user_models.UPIDModel{}
 
 			// generate 8 random characters
-			upid := strings.Replace(uuid.NewString(),"-", "", -1)[0:8]
+			upid = strings.Replace(uuid.NewString(),"-", "", -1)[0:8]
 			if err := upidModel.ReadByValue(db, upid); err != nil{
 				failedAndRollback(dbSession, http.StatusInternalServerError)
 			}
@@ -214,6 +217,20 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		if err := dbSession.Commit(); err != nil{
 			failedAndRollback(dbSession, http.StatusInternalServerError)
 		}
+
+		jwtString, err := jwt_utils.GenerateJWT(jwt.MapClaims{
+			"exp": time.Now().Add(time.Minute * 30).Unix(),
+			"upid": upid,
+		})
+
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		rw.Header().Set("x-access-token", jwtString)
+		rw.WriteHeader(http.StatusCreated)
+		
 
 		// TODO: Login user here (produce jwt tokens for access and refresh)
 	}

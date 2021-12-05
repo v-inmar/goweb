@@ -8,7 +8,7 @@ import (
 	"github.com/joho/godotenv"
 	errorhandlers "github.com/v-inmar/goweb/handlers/errors"
 
-	todo_routes "github.com/v-inmar/goweb/routes"
+	"github.com/v-inmar/goweb/routes"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 	}).Methods("GET")
 
 	// Create todos sub routers
-	todo_routes.TodoRoutes(app.Router, app.DB, "/todos")
+	routes.TodoRoutes(app.Router, app.DB, "/todos")
 
 	// Assign the NotFoundHandler (custom) to mux's NotFoundHandler
 	router.NotFoundHandler = http.HandlerFunc(errorhandlers.NotFoundHandler)
