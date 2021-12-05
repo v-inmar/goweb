@@ -1,0 +1,279 @@
+package handler_auth
+
+import (
+	"database/sql"
+	"encoding/json"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
+	"github.com/v-inmar/goweb/models"
+	"github.com/v-inmar/goweb/models/user_linker_models"
+	"github.com/v-inmar/goweb/models/user_models"
+	"github.com/v-inmar/goweb/utils/hash_utils"
+	"github.com/v-inmar/goweb/utils/jwt_utils"
+)
+
+func SignupAuth(db *sql.DB) http.HandlerFunc{
+	return func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
+
+		reqBody := models.RequestSignUpBodyModel{}
+		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil{
+			if err.Error() == "EOF"{
+				rw.WriteHeader(http.StatusBadRequest)
+			}else{
+				rw.WriteHeader(http.StatusInternalServerError)
+			}
+			return
+		}
+
+		// Check for empty request body
+		if (reqBody == models.RequestSignUpBodyModel{}){
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		
+		/*
+		Makre sure all fields have values
+		*/
+		if len(reqBody.Firstname) < 1 {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if len(reqBody.Lastname) < 1 {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if len(reqBody.EmailAddress) < 1 {
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if len(reqBody.Password) < 8 { // Password must be atleast 8 characters long
+			rw.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		emailModel := user_models.EmailModel{}
+		err := emailModel.ReadByValue(db, strings.ToLower(reqBody.EmailAddress))
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		
+		if (emailModel != user_models.EmailModel{}){
+			emailLinkerModel := user_linker_models.EmailLinkerModel{}
+			err := emailLinkerModel.ReadByEmailId(db, emailModel.ID)
+			if err != nil{
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			// Compare to empty..not empty, means email not available
+			if (emailLinkerModel != user_linker_models.EmailLinkerModel{}){
+				rw.WriteHeader(http.StatusConflict)
+				return	
+			}
+		}
+
+		// Hash the incoming password
+		hashed, err := hash_utils.PasswordHash(reqBody.Password)
+		if err != nil{
+			rw.WriteHeader(http.StatusConflict)
+			return
+		}
+
+		// ----- If it gets here, the email address is available ----- //
+
+
+		dbSession, err := db.Begin()
+		if err != nil {
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// ### User Model ### //
+		userModel := user_models.UserModel{}
+		if err := userModel.Create(dbSession); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// ### Email Model ### //
+		if (emailModel == user_models.EmailModel{}){
+			if err := emailModel.Create(dbSession, strings.ToLower(reqBody.EmailAddress)); err != nil{
+				dbSession.Rollback()
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		emailLinkerModel := user_linker_models.EmailLinkerModel{}
+		if err := emailLinkerModel.Create(dbSession, userModel.ID, emailModel.ID); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+
+		// ### Password Model ### //
+		passwordModel := user_models.PasswordModel{}
+		if err := passwordModel.Create(dbSession, hashed); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		passwordLinkerModel := user_linker_models.PasswordLinkerModel{}
+		if err := passwordLinkerModel.Create(dbSession, userModel.ID, passwordModel.ID); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+
+		// ### Firstname Model ### //
+		firstnameModel := user_models.FirstnameModel{}
+		if err := firstnameModel.ReadByValue(db, reqBody.Firstname); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Compare to empty
+		if (firstnameModel == user_models.FirstnameModel{}) {
+			// Create new
+			if err := firstnameModel.Create(dbSession, reqBody.Firstname); err != nil{
+				dbSession.Rollback()
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		firstnameLinkerModel := user_linker_models.FirstnameLinkerModel{}
+		if err := firstnameLinkerModel.Create(dbSession, userModel.ID, firstnameModel.ID); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// ### Lastname Model ### //
+		lastnameModel := user_models.LastnameModel{}
+		if err := lastnameModel.ReadByValue(db, reqBody.Lastname); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Compare to empty
+		if (lastnameModel == user_models.LastnameModel{}) {
+			// Create new
+			if err := lastnameModel.Create(dbSession, reqBody.Lastname); err != nil{
+				dbSession.Rollback()
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+
+		lastnameLinkerModel := user_linker_models.LastnameLinkerModel{}
+		if err := lastnameLinkerModel.Create(dbSession, userModel.ID, lastnameModel.ID); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+
+		// ### UPID Model ### //
+		
+		var upid string
+		count := 0
+		upidCreateSuccess := false
+		// this will only run it 5 times
+		// to make sure loop doesn't run forever
+		for ok := true; ok; ok = (count != 5){
+			upidModel := user_models.UPIDModel{}
+
+			// generate 8 random characters
+			upid = strings.Replace(uuid.NewString(),"-", "", -1)[0:8]
+			if err := upidModel.ReadByValue(db, upid); err != nil{
+				dbSession.Rollback()
+				rw.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			// Compare to empty
+			if (upidModel == user_models.UPIDModel{}){
+				if err := upidModel.Create(dbSession, upid); err != nil{
+					dbSession.Rollback()
+					rw.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				upidLinkerModel := user_linker_models.UPIDLinkerModel{}
+				if err := upidLinkerModel.Create(dbSession, userModel.ID, upidModel.ID); err != nil{
+					dbSession.Rollback()
+					rw.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				upidCreateSuccess = true
+				break
+			}
+
+		}
+
+		// for loop finished and check for upid success
+		if !upidCreateSuccess{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+
+		// Commit the transaction
+		if err := dbSession.Commit(); err != nil{
+			dbSession.Rollback()
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Create an access jwt
+		// Claims only for non-production
+		// For prod, produce better claims
+		accessStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
+			"exp": time.Now().Add(time.Minute * 60).Unix(), // 1 hour
+			"upid": upid,
+		})
+
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// Create a refresh jwt
+		// Claims only for non-production
+		// For prod, produce better claims
+		refreshStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
+			"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // 7days
+			"upid": upid,
+		})
+
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+
+		// ## - Write to the Response Header the Access and Refresh Token - ## //
+		rw.Header().Set("x-access-token", accessStringToken)
+		rw.Header().Set("x-refresh-token", refreshStringToken)
+		rw.WriteHeader(http.StatusCreated) // Success 201 return
+		return
+	}
+}

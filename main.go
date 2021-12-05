@@ -8,8 +8,17 @@ import (
 	"github.com/joho/godotenv"
 	errorhandlers "github.com/v-inmar/goweb/handlers/errors"
 
-	todo_routes "github.com/v-inmar/goweb/routes"
+	"github.com/v-inmar/goweb/routes"
 )
+
+func loggingMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Do stuff here
+        log.Println(r.RequestURI)
+        // Call the next handler, which can be another middleware in the chain, or the final handler.
+        next.ServeHTTP(w, r)
+    })
+}
 
 func main() {
 
@@ -51,11 +60,16 @@ func main() {
 		rw.WriteHeader(http.StatusOK)
 	}).Methods("GET")
 
+	// Create auth sub routers
+	routes.AuthRoutes(app.Router, app.DB, "/auth")
+
 	// Create todos sub routers
-	todo_routes.TodoRoutes(app.Router, app.DB, "/todos")
+	routes.TodoRoutes(app.Router, app.DB, "/todos")
+
 
 	// Assign the NotFoundHandler (custom) to mux's NotFoundHandler
 	router.NotFoundHandler = http.HandlerFunc(errorhandlers.NotFoundHandler)
+	router.Use(loggingMiddleware)
 
 	// Run server with the router and log error if failed
 	// log.Fatal(http.ListenAndServe(":5000", router))
