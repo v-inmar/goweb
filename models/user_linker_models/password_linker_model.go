@@ -10,7 +10,7 @@ type PasswordLinkerModel struct {
 	UserID int64
 	PasswordID int64
 	DateCreated time.Time
-	DateUpdated time.Time
+	DateUpdated sql.NullTime
 }
 
 func (m *PasswordLinkerModel) Create(dbSession *sql.Tx, userID, passwordID int64) error {

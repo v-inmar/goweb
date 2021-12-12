@@ -260,8 +260,8 @@ CREATE TABLE `user_email_linker_model` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   UNIQUE KEY `email_id` (`email_id`),
-  CONSTRAINT `user_email_linker_model_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
-  CONSTRAINT `user_email_linker_model_ibfk_2` FOREIGN KEY (`email_id`) REFERENCES `email_model` (`id`)
+  CONSTRAINT `user_id_FK_UMLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
+  CONSTRAINT `email_id_FK_UMLM` FOREIGN KEY (`email_id`) REFERENCES `email_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -281,8 +281,8 @@ CREATE TABLE `user_firstname_linker_model` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   KEY `firstname_id` (`firstname_id`),
-  CONSTRAINT `user_firstname_linker_model_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
-  CONSTRAINT `user_firstname_linker_model_ibfk_2` FOREIGN KEY (`firstname_id`) REFERENCES `firstname_model` (`id`)
+  CONSTRAINT `user_id_FK_UFLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
+  CONSTRAINT `firstname_id_FK_UFLM` FOREIGN KEY (`firstname_id`) REFERENCES `firstname_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -302,8 +302,8 @@ CREATE TABLE `user_lastname_linker_model` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   KEY `lastname_id` (`lastname_id`),
-  CONSTRAINT `user_lastname_linker_model_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
-  CONSTRAINT `user_lastname_linker_model_ibfk_2` FOREIGN KEY (`lastname_id`) REFERENCES `lastname_model` (`id`)
+  CONSTRAINT `user_id_FK_ULLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
+  CONSTRAINT `lastname_id_FK_ULLM` FOREIGN KEY (`lastname_id`) REFERENCES `lastname_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -325,8 +325,8 @@ CREATE TABLE `user_password_linker_model` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   KEY `password_id` (`password_id`),
-  CONSTRAINT `user_password_linker_model_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
-  CONSTRAINT `user_password_linker_model_ibfk_2` FOREIGN KEY (`password_id`) REFERENCES `password_model` (`id`)
+  CONSTRAINT `user_id_FK_UPLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
+  CONSTRAINT `password_id_FK_UPLM` FOREIGN KEY (`password_id`) REFERENCES `password_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -345,8 +345,8 @@ CREATE TABLE `user_todo_linker_model` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   UNIQUE KEY `todo_id` (`todo_id`),
-  CONSTRAINT `user_todo_linker_model_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
-  CONSTRAINT `user_todo_linker_model_ibfk_2` FOREIGN KEY (`todo_id`) REFERENCES `todo_model` (`id`)
+  CONSTRAINT `user_id_FK_UTLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
+  CONSTRAINT `todo_id_FK_UTLM` FOREIGN KEY (`todo_id`) REFERENCES `todo_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -365,8 +365,44 @@ CREATE TABLE `user_upid_linker_model` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `upid_id_UNIQUE` (`upid_id`),
   UNIQUE KEY `user_id_UNIQUE` (`user_id`),
-  CONSTRAINT `upid_id` FOREIGN KEY (`upid_id`) REFERENCES `upid_model` (`id`),
-  CONSTRAINT `user_id` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`)
+  CONSTRAINT `upid_id_FK_UULM` FOREIGN KEY (`upid_id`) REFERENCES `upid_model` (`id`),
+  CONSTRAINT `user_id_FK_UULM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for table `session_model`
+--
+
+DROP TABLE IF EXISTS `session_model`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `session_model` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `value` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `date_created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `value_UNIQUE` (`value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for table `user_session_linker_model`
+--
+
+DROP TABLE IF EXISTS `user_session_linker_model`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `user_session_linker_model` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `session_id` bigint NOT NULL,
+  `date_created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `session_id_UNIQUE` (`session_id`),
+  KEY `user_id_FK_USLM` (`user_id`),
+  CONSTRAINT `session_id_FK_USLM` FOREIGN KEY (`session_id`) REFERENCES `session_model` (`id`),
+  CONSTRAINT `user_id_FK_USLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
