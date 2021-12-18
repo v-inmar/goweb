@@ -368,42 +368,6 @@ CREATE TABLE `user_upid_linker_model` (
   CONSTRAINT `upid_id_FK_UULM` FOREIGN KEY (`upid_id`) REFERENCES `upid_model` (`id`),
   CONSTRAINT `user_id_FK_UULM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
---
--- Table structure for table `session_model`
---
-
-DROP TABLE IF EXISTS `session_model`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
- SET character_set_client = utf8mb4 ;
-CREATE TABLE `session_model` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `value` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `date_created` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `value_UNIQUE` (`value`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-
---
--- Table structure for table `user_session_linker_model`
---
-
-DROP TABLE IF EXISTS `user_session_linker_model`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
- SET character_set_client = utf8mb4 ;
-CREATE TABLE `user_session_linker_model` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `session_id` bigint NOT NULL,
-  `date_created` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `session_id_UNIQUE` (`session_id`),
-  KEY `user_id_FK_USLM` (`user_id`),
-  CONSTRAINT `session_id_FK_USLM` FOREIGN KEY (`session_id`) REFERENCES `session_model` (`id`),
-  CONSTRAINT `user_id_FK_USLM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

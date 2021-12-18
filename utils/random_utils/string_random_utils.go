@@ -11,19 +11,6 @@ type RandomString struct {
 	Value string
 }
 
-// Creates a rnadom string to be used as session value
-func (s* RandomString) GenerateForSession() error{
-	gen, err := uuid.NewRandom()
-	if err != nil{
-		return err
-	}
-	val := gen.String()
-	if val == ""{
-		return errors.New("empty string for GenerateForSession")
-	}
-	s.Value = val
-	return nil
-}
 
 // Creates a rnadom string to be used as upid value
 func (s* RandomString) GenerateForUPID() error{

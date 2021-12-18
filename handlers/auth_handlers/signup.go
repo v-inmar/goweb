@@ -18,6 +18,7 @@ import (
 
 func SignupAuth(db *sql.DB) http.HandlerFunc{
 	return func(rw http.ResponseWriter, r *http.Request) {
+		addr := r.RemoteAddr
 		respBodErrMsgModel := models.ResponseBodyErrorMessageModel{}
 		rw.Header().Set("Content-Type", "application/json")
 
@@ -242,27 +243,18 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 			// generate 8 random characters
 			upid = strings.Replace(uuid.NewString(),"-", "", -1)[0:8]
 			if err := upidModel.ReadByValue(db, upid); err != nil{
-				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
-				json.NewEncoder(rw).Encode(respBodErrMsgModel)
-				return
+				continue
 			}
 
 			// Compare to empty
 			if (upidModel == user_models.UPIDModel{}){
 				if err := upidModel.Create(dbSession, upid); err != nil{
-					rw.WriteHeader(http.StatusInternalServerError)
-					respBodErrMsgModel.InternalServerError("Encountered Server Error")
-					json.NewEncoder(rw).Encode(respBodErrMsgModel)
-					return
+					continue
 				}
 
 				upidLinkerModel := user_linker_models.UPIDLinkerModel{}
 				if err := upidLinkerModel.Create(dbSession, userModel.ID, upidModel.ID); err != nil{
-					rw.WriteHeader(http.StatusInternalServerError)
-					respBodErrMsgModel.InternalServerError("Encountered Server Error")
-					json.NewEncoder(rw).Encode(respBodErrMsgModel)
-					return
+					continue
 				}
 				upidCreateSuccess = true
 				break
@@ -292,11 +284,13 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		// For prod, produce better claims
 		accessStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
 			"exp": time.Now().Add(time.Minute * 60).Unix(), // 1 hour
-			"upid": upid,
+			"addr": addr, // client's address (ip)
 		})
 
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
+			respBodErrMsgModel.InternalServerError("Encountered Server Error")
+			json.NewEncoder(rw).Encode(respBodErrMsgModel)
 			return
 		}
 
@@ -305,7 +299,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		// For prod, produce better claims
 		refreshStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
 			"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // 7days
-			"upid": upid,
+			"addr": addr, // client's address (ip)
 		})
 
 		if err != nil{
