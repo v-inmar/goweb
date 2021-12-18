@@ -25,6 +25,7 @@ func (s* RandomString) GenerateForSession() error{
 	return nil
 }
 
+// Creates a rnadom string to be used as upid value
 func (s* RandomString) GenerateForUPID() error{
 	gen, err := uuid.NewRandom()
 	if err != nil{
