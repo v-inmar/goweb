@@ -33,3 +33,13 @@ func (m *AuthLinkerModel) Create(dbSession *sql.Tx, userID, authID int64) error{
 	return nil
 }
 
+func (m *AuthLinkerModel) ReadByUserId(db *sql.DB, userID int64) error{
+	err := db.QueryRow("select * from user_auth_linker_model where user_id=?", userID).Scan(&m.ID, &m.UserID, &m.AuthID, &m.DateCreated, &m.DateUpdated)
+	if err != nil{
+		if err != sql.ErrNoRows{
+			return err
+		}
+	}
+	return nil
+}
+

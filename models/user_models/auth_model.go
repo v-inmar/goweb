@@ -41,3 +41,14 @@ func (m *AuthModel) ReadByValue(db *sql.DB, value string) error {
 	}
 	return nil
 }
+
+// Read row depending on the id passed in
+func (m *AuthModel) ReadById(db *sql.DB, id int64) error {
+	err := db.QueryRow("select * from auth_model where id=?", id).Scan(&m.ID, &m.Value, &m.DateCreated)
+	if err != nil {
+		if err != sql.ErrNoRows{
+			return err
+		}
+	}
+	return nil
+}
