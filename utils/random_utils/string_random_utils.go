@@ -14,16 +14,34 @@ type RandomString struct {
 
 // Creates a rnadom string to be used as upid value
 func (s* RandomString) GenerateForUPID() error{
-	gen, err := uuid.NewRandom()
+	val, err := generateString()
 	if err != nil{
 		return err
 	}
-	val := gen.String()
-	if val == ""{
-		return errors.New("empty string for GenerateForUPID")
-	}
-
 	subVal := strings.Replace(val,"-", "", -1)[0:8]
 	s.Value = subVal
 	return nil
+}
+
+// Creates a random string to be used as auth value
+func (s* RandomString) GenerateAuth() error{
+	val, err := generateString()
+	if err != nil{
+		return err
+	}
+	s.Value = val[:64]
+	return nil
+}
+
+// helps generating random string
+func generateString()(string, error){
+	gen, err := uuid.NewRandom()
+	if err != nil{
+		return "", err
+	}
+	val := gen.String()
+	if val == ""{
+		return "", errors.New("empty string for Generate")
+	}
+	return val, nil
 }
