@@ -403,6 +403,7 @@ CREATE TABLE `user_auth_linker_model` (
   `user_id` bigint NOT NULL,
   `auth_id` bigint DEFAULT NULL,
   `date_created` datetime NOT NULL,
+  `date_updated` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   UNIQUE KEY `auth_id` (`auth_id`),

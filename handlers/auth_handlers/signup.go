@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/google/uuid"
 	"github.com/v-inmar/goweb/models"
 	"github.com/v-inmar/goweb/models/user_linker_models"
 	"github.com/v-inmar/goweb/models/user_models"
 	"github.com/v-inmar/goweb/utils/hash_utils"
 	"github.com/v-inmar/goweb/utils/jwt_utils"
+	"github.com/v-inmar/goweb/utils/random_utils"
 )
 
 func SignupAuth(db *sql.DB) http.HandlerFunc{
@@ -228,27 +228,27 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 			return
 		}
 
+		// string fenerator
+		randStringGen := random_utils.RandomString{}
 
 		// ### UPID Model ### //
-		
-		var upid string
-		count := 0
-		upidCreateSuccess := false
+		success := false
 		// this will only run it 5 times
 		// to make sure loop doesn't run forever
-		for ok := true; ok; ok = (count != 5){
+		for count := 0; count < 5; count++{
+			if err := randStringGen.GenerateForUPID(); err != nil{
+				continue
+			}
+
 			upidModel := user_models.UPIDModel{}
 
-			// TODO: Refactor to a dedicated function
-			// generate 8 random characters
-			upid = strings.Replace(uuid.NewString(),"-", "", -1)[0:8]
-			if err := upidModel.ReadByValue(db, upid); err != nil{
+			if err := upidModel.ReadByValue(db, randStringGen.Value); err != nil{
 				continue
 			}
 
 			// Compare to empty
 			if (upidModel == user_models.UPIDModel{}){
-				if err := upidModel.Create(dbSession, upid); err != nil{
+				if err := upidModel.Create(dbSession, randStringGen.Value); err != nil{
 					continue
 				}
 
@@ -256,19 +256,61 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 				if err := upidLinkerModel.Create(dbSession, userModel.ID, upidModel.ID); err != nil{
 					continue
 				}
-				upidCreateSuccess = true
+				success = true
 				break
 			}
 
 		}
 
 		// for loop finished and check for upid success
-		if !upidCreateSuccess{
+		if !success{
 			rw.WriteHeader(http.StatusInternalServerError)
 			respBodErrMsgModel.InternalServerError("Encountered Server Error")
 			json.NewEncoder(rw).Encode(respBodErrMsgModel)
 			return
 		}
+
+
+		// ### Auth Model ### //
+		auth_value := ""
+		success = false // reset from previous use
+		// will try 5 times only
+		for count := 0; count < 5; count++{
+			if err := randStringGen.GenerateAuth(); err != nil{
+				continue
+			}
+
+			authModel := user_models.AuthModel{}
+			if err := authModel.ReadByValue(db, randStringGen.Value); err != nil{
+				continue
+			}
+
+			// check if empty
+			if (authModel == user_models.AuthModel{}){
+				// empty means its ok to use the generated string
+				if err := authModel.Create(dbSession, randStringGen.Value); err != nil{
+					continue
+				}
+
+				// create the linker model
+				authLinkerModel := user_linker_models.AuthLinkerModel{}
+				if err := authLinkerModel.Create(dbSession, userModel.ID, authModel.ID); err != nil{
+					continue
+				}
+				success = true
+				auth_value = authModel.Value
+				break
+			}
+		}
+
+		// for loop finished and check for upid success
+		if !success{
+			rw.WriteHeader(http.StatusInternalServerError)
+			respBodErrMsgModel.InternalServerError("Encountered Server Error")
+			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			return
+		}
+
 
 
 		// Commit the transaction
@@ -285,6 +327,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		accessStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
 			"exp": time.Now().Add(time.Minute * 60).Unix(), // 1 hour
 			"addr": addr, // client's address (ip)
+			"uid": auth_value, // user identification
 		})
 
 		if err != nil{
@@ -300,6 +343,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		refreshStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
 			"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // 7days
 			"addr": addr, // client's address (ip)
+			"uid": auth_value, // user identification
 		})
 
 		if err != nil{
