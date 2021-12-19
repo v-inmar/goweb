@@ -368,6 +368,47 @@ CREATE TABLE `user_upid_linker_model` (
   CONSTRAINT `upid_id_FK_UULM` FOREIGN KEY (`upid_id`) REFERENCES `upid_model` (`id`),
   CONSTRAINT `user_id_FK_UULM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for table `auth_model`
+--
+
+/*
+This will be the value that will be stored in jwt claims
+and whenever the user changes password, a new value unique value will be generated
+which invalidates any jwt that a user is currently using.
+*/
+DROP TABLE IF EXISTS `auth_model`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `auth_model` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `value` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `date_created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `value_UNIQUE` (`value`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+--
+-- Table structure for table `user_auth_linker_model`
+--
+
+DROP TABLE IF EXISTS `user_auth_linker_model`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+ SET character_set_client = utf8mb4 ;
+CREATE TABLE `user_auth_linker_model` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `auth_id` bigint DEFAULT NULL,
+  `date_created` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `user_id` (`user_id`),
+  UNIQUE KEY `auth_id` (`auth_id`),
+  CONSTRAINT `user_id_FK_UALM` FOREIGN KEY (`user_id`) REFERENCES `user_model` (`id`),
+  CONSTRAINT `auth_id_FK_UALM` FOREIGN KEY (`auth_id`) REFERENCES `auth_model` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
