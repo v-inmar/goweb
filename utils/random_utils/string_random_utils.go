@@ -23,13 +23,19 @@ func (s* RandomString) GenerateForUPID() error{
 	return nil
 }
 
-// Creates a random string to be used as auth value
+// Creates a random strings to be used as auth value
 func (s* RandomString) GenerateAuth() error{
-	val, err := generateString()
+	val1, err := generateString()
 	if err != nil{
 		return err
 	}
-	s.Value = val[:64]
+
+	val2, err := generateString()
+	if err != nil{
+		return err
+	}
+
+	s.Value = (val1+val2)[:64]
 	return nil
 }
 
