@@ -1,38 +1,30 @@
-## Simple REST API with Go and Gorilla Mux
-## With MySQL
+## Simple REST API with Go
+## NO ORM
 
-### NO ORM
-
-**Under Construction**
-
-Just a simple rest API for a Todo List
-
-
-### API Endpoints
-
-| URI   |      Verb      |  Description |
-|----------|:-------------:|------:|
-| /todos |  POST | Creates a new todo item |
-| /todos |  GET | Retrieve all the todo items |
-| /todos/{id} |  GET | Retrieve a single todo item |
-| /todos/{id} |  PUT | Update a todo item |
-| /todos/{id} |  DEL | Delete a todo item |
-
-
-#### Create new and Update todo item request body signature
-
-```json
-{
-	"title": "<string value>",
-	"body": "<string value>"
-}
-
-```
+# Under Construction
 
 
 
-### Bugs :poop: (On-going)
+### Tech Stack
+ - Go (GoLang)
+ - Gorilla Toolkit (mainly mux)
+ - MySQL (storage)
+ - JWT (for "stateless" authorization)
+ - Redis** (jwt blacklisting)
 
-| ID   |      API      |  Description |
-|----------|:-------------:|------:|
-| 1 |  /todos/{id}:PUT | Missing json key 'body' will not ignore but remove current body value |
+### Development
+ - Docker (Ubuntu 20.04)
+ - Git (source control)
+ - Github (of course ^_^ for remote code repo)
+ - Visual Studio Code (Development Environment)
+
+
+### Features
+ - Signup
+ - Login
+ - Logout
+ - Task
+	- Create
+	- Read
+	- Update
+	- Delete**

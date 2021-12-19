@@ -9,8 +9,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/v-inmar/goweb/models"
-	"github.com/v-inmar/goweb/models/auth_models"
-	"github.com/v-inmar/goweb/models/user_auth_linker_models"
 	"github.com/v-inmar/goweb/models/user_linker_models"
 	"github.com/v-inmar/goweb/models/user_models"
 	"github.com/v-inmar/goweb/utils/hash_utils"
@@ -19,6 +17,7 @@ import (
 
 func LoginAuth(db *sql.DB) http.HandlerFunc{
 	return func(rw http.ResponseWriter, r *http.Request) {
+		addr := r.RemoteAddr
 		respBodErrMsgModel := models.ResponseBodyErrorMessageModel{}
 		rw.Header().Set("Content-Type", "application/json")
 
@@ -130,38 +129,42 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		}
 
 		// check the password
-		if hash_utils.PasswordCheck(passwordModel.Value, reqBody.Password) == false{
+		if !hash_utils.PasswordCheck(passwordModel.Value, reqBody.Password){
 			rw.WriteHeader(http.StatusBadRequest)
 			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
 			json.NewEncoder(rw).Encode(respBodErrMsgModel)
 			return
 		}
 
-		// create transaction
-		dbSession, err := db.Begin()
-		if err != nil{
-			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
-			return
-		}
-		defer dbSession.Rollback()
-
-		// create session model that will be in the jwt claims
-		// when the client logs off, remove session model from db to invalidate token
-		sessionModel := auth_models.SessionModel{}
-		err = sessionModel.Create(dbSession, "replaceMe123") // TODO: create a proper random string generator function
-		if err != nil{
+		// get the auth value to attach to jwt claims
+		authLinkerModel := user_linker_models.AuthLinkerModel{}
+		if err := authLinkerModel.ReadByUserId(db, userID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
 			respBodErrMsgModel.InternalServerError("Encountered Server Error")
 			json.NewEncoder(rw).Encode(respBodErrMsgModel)
 			return
 		}
 
-		// create the user and session linker
-		userSessionLinkerModel := user_auth_linker_models.UserSessionLinkerModel{}
-		err = userSessionLinkerModel.Create(dbSession, userID, sessionModel.ID)
-		if err != nil{
+		// this cannot be empty at all
+		// every user has should have this		
+		if (authLinkerModel == user_linker_models.AuthLinkerModel{}){
+			rw.WriteHeader(http.StatusInternalServerError)
+			respBodErrMsgModel.InternalServerError("Encountered Server Error")
+			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			return
+		}
+
+		authModel := user_models.AuthModel{}
+		if err := authModel.ReadById(db, authLinkerModel.AuthID); err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			respBodErrMsgModel.InternalServerError("Encountered Server Error")
+			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			return
+		}
+
+		// again this cannot be empty
+		// this was assigned during signup
+		if (authModel == user_models.AuthModel{}){
 			rw.WriteHeader(http.StatusInternalServerError)
 			respBodErrMsgModel.InternalServerError("Encountered Server Error")
 			json.NewEncoder(rw).Encode(respBodErrMsgModel)
@@ -170,8 +173,9 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 
 		// generate access token
 		accessStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
-			"exp": time.Now().Add(time.Minute * 60).Unix(),
-			"sntoken": sessionModel.Value,
+			"exp": time.Now().Add(time.Minute * 60).Unix(), // 1 hour
+			"addr": addr, // client's address (ip)
+			"uid": authModel.Value, // user identification
 		})
 
 		if err != nil{
@@ -183,18 +187,12 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 
 		// generate refresh token
 		refreshStringToken, err := jwt_utils.GenerateJWT(jwt.MapClaims{
-			"exp": time.Now().Add(time.Hour * 24 * 7).Unix(),
-			"sntoken": sessionModel.Value,
+			"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // 7 days
+			"addr": addr, // client's address (ip)
+			"uid": authModel.Value, // user identification
 		})
-		if err != nil{
-			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
-			return
-		}
 
-		// Commit the transaction
-		if err := dbSession.Commit(); err != nil{
+		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
 			respBodErrMsgModel.InternalServerError("Encountered Server Error")
 			json.NewEncoder(rw).Encode(respBodErrMsgModel)
