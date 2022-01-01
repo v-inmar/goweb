@@ -10,6 +10,18 @@ type ResponseBodyModel struct {
 	Updated string `json:"updated"`
 }
 
+type ResponseBodyStatusModel struct {
+	Code int `json:"code"`
+	Status string `json:"status"`
+	Message string `json:"message"`
+}
+
+func (m *ResponseBodyStatusModel) OK(message string){
+	m.Code = 200
+	m.Status = "OK"
+	m.Message = message
+}
+
 type ResponseBodyErrorMessageModel struct {
 	Code int `json:"code"`
 	Status string `json:"status"`
