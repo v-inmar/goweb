@@ -13,4 +13,5 @@ func AuthRoutes(router *mux.Router, db *sql.DB, prefix string){
 
 	subRouter.HandleFunc("/signup", handler_auth.SignupAuth(db)).Methods(http.MethodPost)
 	subRouter.HandleFunc("/login", handler_auth.LoginAuth(db)).Methods(http.MethodPost)
+	subRouter.HandleFunc("/logout", handler_auth.LogoutAuth(db)).Methods(http.MethodGet)
 }

@@ -200,8 +200,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		}
 
 		// Set token headers
-		rw.Header().Set("x-access-token", accessStringToken)
-		rw.Header().Set("x-refresh-token", refreshStringToken)
+		rw.Header().Set("X-Access-Token", accessStringToken)
+		rw.Header().Set("X-Refresh-Token", refreshStringToken)
 		rw.WriteHeader(http.StatusOK) // Success 200 return
 
 		// Also return tokens in the body

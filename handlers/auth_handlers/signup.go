@@ -355,8 +355,8 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 
 
 		// ## - Write to the Response Header the Access and Refresh Token - ## //
-		rw.Header().Set("x-access-token", accessStringToken)
-		rw.Header().Set("x-refresh-token", refreshStringToken)
+		rw.Header().Set("X-Access-Token", accessStringToken)
+		rw.Header().Set("X-Refresh-Token", refreshStringToken)
 		rw.WriteHeader(http.StatusCreated) // Success 201 return
 		// Also return tokens in the body
 		json.NewEncoder(rw).Encode(models.ResponseBodyJWTModel{
