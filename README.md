@@ -20,9 +20,9 @@
 
 
 ### Features
- - Signup
- - Login
- - Logout
+ - [x] Signup
+ - [x] Login
+ - [x] Logout
  - Task
 	- Create
 	- Read
