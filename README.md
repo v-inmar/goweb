@@ -21,7 +21,7 @@
 
 ### Features
  - [x] Signup
- - Login [x]
+ - Login - [x]
  - [x] Logout
  - Task
 	- Create
