@@ -14,7 +14,7 @@ type StatusModel struct {
 /*************/
 
 // 200 OK
-func (m *StatusModel) StatusOK(message, payload string) {
+func (m *StatusModel) OK(message, payload string) {
 	m.Code = http.StatusOK
 	m.Status = "OK"
 	m.Message = message
@@ -22,7 +22,7 @@ func (m *StatusModel) StatusOK(message, payload string) {
 }
 
 // 201 Created
-func (m *StatusModel) StatusCreated(message, payload string) {
+func (m *StatusModel) Created(message, payload string) {
 	m.Code = http.StatusCreated
 	m.Status = "Created"
 	m.Message = message

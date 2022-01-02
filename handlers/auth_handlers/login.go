@@ -3,12 +3,15 @@ package handler_auth
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/v-inmar/goweb/models"
+	"github.com/v-inmar/goweb/models/request_models"
+	"github.com/v-inmar/goweb/models/response_models"
+	"github.com/v-inmar/goweb/models/token_models"
 	"github.com/v-inmar/goweb/models/user_linker_models"
 	"github.com/v-inmar/goweb/models/user_models"
 	"github.com/v-inmar/goweb/utils/hash_utils"
@@ -17,54 +20,54 @@ import (
 
 func LoginAuth(db *sql.DB) http.HandlerFunc{
 	return func(rw http.ResponseWriter, r *http.Request) {
+		responseModel := response_models.StatusModel{}
+		loginModel := request_models.LoginModel{}
 		addr := r.RemoteAddr
-		respBodErrMsgModel := models.ResponseBodyErrorMessageModel{}
 		rw.Header().Set("Content-Type", "application/json")
-
-		reqBody := models.RequestLoginBodyModel{}
-		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil{
+		if err := json.NewDecoder(r.Body).Decode(&loginModel); err != nil{
 			if err.Error() == "EOF"{
 				rw.WriteHeader(http.StatusBadRequest)
-				respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
+				responseModel.BadRequest("No values in the request", "")
 			}else{
 				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
+				responseModel.ServerError("Server error encountered", "")
 			}
 			// encode the error message response
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// empty request body
-		if (reqBody == models.RequestLoginBodyModel{}){
+		if (loginModel == request_models.LoginModel{}){
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest("No values in request body", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
-		// empty email field
-		if len(reqBody.EmailAddress) < 1 {
-			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+		// this allows a single variable only to be used for the entire handler
+		loginString, err := loginModel.ToStringNoPassword()
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
-		// empty password field
-		if len(reqBody.Password) < 1 {
+		if err := loginModel.HasValidValues(); err != nil{
+			fmt.Println(err)
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest("Invalid Email Address and/or Password", loginString)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// get the email model from database
 		emailModel := user_models.EmailModel{}
-		if err := emailModel.ReadByValue(db, strings.ToLower(reqBody.EmailAddress)); err != nil{
+		if err := emailModel.ReadByValue(db, strings.ToLower(loginModel.EmailAddress)); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -72,8 +75,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		// the model is empty
 		if (emailModel == user_models.EmailModel{}){
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest("Invalid Email Address and/or Password", loginString)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -82,8 +85,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		emailLinkerModel := user_linker_models.EmailLinkerModel{}
 		if err := emailLinkerModel.ReadByEmailId(db, emailModel.ID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -92,8 +95,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		// did not match any
 		if (emailLinkerModel == user_linker_models.EmailLinkerModel{}){
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest("Invalid Email Address and/or Password", loginString)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -104,8 +107,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		passwordLinkerModel := user_linker_models.PasswordLinkerModel{}
 		if err := passwordLinkerModel.ReadByUserId(db, userID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -114,8 +117,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		// the password linker should not be empty
 		if (passwordLinkerModel == user_linker_models.PasswordLinkerModel{}){
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -123,16 +126,16 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		passwordModel := user_models.PasswordModel{}
 		if err := passwordModel.ReadById(db, passwordLinkerModel.ID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// check the password
-		if !hash_utils.PasswordCheck(passwordModel.Value, reqBody.Password){
+		if !hash_utils.PasswordCheck(passwordModel.Value, loginModel.Password){
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Invalid Email Address and/or Password")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest("Invalid Email Address and/or Password", loginString)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -140,8 +143,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		authLinkerModel := user_linker_models.AuthLinkerModel{}
 		if err := authLinkerModel.ReadByUserId(db, userID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -149,16 +152,16 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		// every user has should have this		
 		if (authLinkerModel == user_linker_models.AuthLinkerModel{}){
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		authModel := user_models.AuthModel{}
 		if err := authModel.ReadById(db, authLinkerModel.AuthID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -166,8 +169,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		// this was assigned during signup
 		if (authModel == user_models.AuthModel{}){
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -180,8 +183,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -194,8 +197,21 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
+			return
+		}
+
+		jwtModel := token_models.JWTModel{
+			AccessToken: accessStringToken,
+			RefreshToken: refreshStringToken,
+		}
+
+		stringTokens, err := jwtModel.Stringify()
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -205,12 +221,8 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		rw.WriteHeader(http.StatusOK) // Success 200 return
 
 		// Also return tokens in the body
-		json.NewEncoder(rw).Encode(models.ResponseBodyJWTModel{
-			Code: http.StatusOK,
-			Status: "OK",
-			AccessToken: accessStringToken,
-			RefreshToken: refreshStringToken,
-		})
+		responseModel.OK("User successfully logged in", stringTokens)
+		json.NewEncoder(rw).Encode(responseModel)
 
 	}
 }
