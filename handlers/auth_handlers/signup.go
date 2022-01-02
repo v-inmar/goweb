@@ -35,7 +35,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 				responseModel.BadRequest("No values in the request", "")
 			}else{
 				rw.WriteHeader(http.StatusInternalServerError)
-				responseModel.ServerError("Encountered Server Error", "")
+				responseModel.ServerError("Server error encountered", "")
 			}
 			// encode the error message response
 			json.NewEncoder(rw).Encode(responseModel)
@@ -50,20 +50,23 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 			return
 		}
 
+		// a single string to be used as a return payload
+		// without exposing the password
+		signupString, err := signupModel.ToStringNoPassword()
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
+			return
+		}
+
 		
 		/*
 		Make sure all fields have values
 		*/
 		if err := signupModel.HasValidValues(); err != nil{
-			stringModel, errJSON := signupModel.ToStringNoPassword()
-			if errJSON != nil{
-				rw.WriteHeader(http.StatusInternalServerError)
-				responseModel.ServerError("Server error encountered", "")
-				json.NewEncoder(rw).Encode(responseModel)
-				return
-			}
 			rw.WriteHeader(http.StatusBadRequest)
-			responseModel.BadRequest(err.Error(), stringModel)
+			responseModel.BadRequest(err.Error(), signupString)
 			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
@@ -72,7 +75,7 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		Database checks
 		*/
 		emailModel := user_models.EmailModel{}
-		err := emailModel.ReadByValue(db, strings.ToLower(signupModel.EmailAddress))
+		err = emailModel.ReadByValue(db, strings.ToLower(signupModel.EmailAddress))
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
 			responseModel.ServerError("Server error encountered", "")
@@ -92,16 +95,8 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 			}
 			// Compare to empty..not empty, means email not available
 			if (emailLinkerModel != user_linker_models.EmailLinkerModel{}){
-				stringModel, err := signupModel.ToStringNoPassword()
-				if err != nil{
-					rw.WriteHeader(http.StatusInternalServerError)
-					responseModel.ServerError("Server error encountered", "")
-					json.NewEncoder(rw).Encode(responseModel)
-					return
-				}
-
 				rw.WriteHeader(http.StatusConflict)
-				responseModel.Conflict("Email Address is not available", stringModel)
+				responseModel.Conflict("Email Address is not available", signupString)
 				json.NewEncoder(rw).Encode(responseModel)
 				return	
 			}
@@ -376,9 +371,6 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		rw.Header().Set("X-Refresh-Token", refreshStringToken)
 		rw.WriteHeader(http.StatusCreated) // Success 201 return
 		// Also return tokens in the body
-		
-
-
 		responseModel.Created("User successfully registered", stringTokens)
 		json.NewEncoder(rw).Encode(responseModel)
 	}

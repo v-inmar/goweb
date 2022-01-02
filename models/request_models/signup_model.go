@@ -42,8 +42,15 @@ func (m *SignupModel) HasValidValues()error{
 }
 
 func (m *SignupModel) ToStringNoPassword() (string, error){
-	m.Password = ""
-	modelByteArr, err := json.Marshal(m)
+
+	// a copy is made so the actual model's value is untouched
+	// and this copy can then be used to marshal to a string
+	modelCopy := make(map[string]string)
+	modelCopy["firstname"] = m.Firstname
+	modelCopy["lastname"] = m.Lastname
+	modelCopy["email address"] = m.EmailAddress
+	modelCopy["password"] = ""
+	modelByteArr, err := json.Marshal(modelCopy)
 	if err != nil{
 		return "", err
 	}
