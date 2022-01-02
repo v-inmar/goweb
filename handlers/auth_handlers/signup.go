@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/v-inmar/goweb/models"
+	"github.com/v-inmar/goweb/models/request_models"
+	"github.com/v-inmar/goweb/models/response_models"
+	"github.com/v-inmar/goweb/models/token_models"
 	"github.com/v-inmar/goweb/models/user_linker_models"
 	"github.com/v-inmar/goweb/models/user_models"
 	"github.com/v-inmar/goweb/utils/hash_utils"
@@ -18,71 +20,63 @@ import (
 
 func SignupAuth(db *sql.DB) http.HandlerFunc{
 	return func(rw http.ResponseWriter, r *http.Request) {
+		responseModel := response_models.StatusModel{}
+		signupModel := request_models.SignupModel{}
 		addr := r.RemoteAddr
-		respBodErrMsgModel := models.ResponseBodyErrorMessageModel{}
+		// respBodErrMsgModel := models.ResponseBodyErrorMessageModel{}
 		rw.Header().Set("Content-Type", "application/json")
 
-		reqBody := models.RequestSignUpBodyModel{}
-		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil{
+		// reqBody := models.RequestSignUpBodyModel{}
+		if err := json.NewDecoder(r.Body).Decode(&signupModel); err != nil{
+
 			// no request body
 			if err.Error() == "EOF"{
 				rw.WriteHeader(http.StatusBadRequest)
-				respBodErrMsgModel.BadRequest("No values in request")
+				responseModel.BadRequest("No values in the request", "")
 			}else{
 				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
+				responseModel.ServerError("Encountered Server Error", "")
 			}
 			// encode the error message response
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// Check for empty request body
-		if (reqBody == models.RequestSignUpBodyModel{}){
+		if (signupModel == request_models.SignupModel{}){
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("No values in request body")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest("No values in request body", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		
 		/*
-		Makre sure all fields have values
+		Make sure all fields have values
 		*/
-		if len(reqBody.Firstname) < 1 {
+		if err := signupModel.HasValidValues(); err != nil{
+			stringModel, errJSON := signupModel.ToStringNoPassword()
+			if errJSON != nil{
+				rw.WriteHeader(http.StatusInternalServerError)
+				responseModel.ServerError("Server error encountered", "")
+				json.NewEncoder(rw).Encode(responseModel)
+				return
+			}
 			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Require field and value for Firstname")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.BadRequest(err.Error(), stringModel)
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
-		if len(reqBody.Lastname) < 1 {
-			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Require field and value for Lastname")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
-			return
-		}
-
-		if len(reqBody.EmailAddress) < 1 {
-			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Require field and value for Email Address")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
-			return
-		}
-
-		if len(reqBody.Password) < 8 { // Password must be atleast 8 characters long
-			rw.WriteHeader(http.StatusBadRequest)
-			respBodErrMsgModel.BadRequest("Require field and value for Password with 8 minimum characters")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
-			return
-		}
-
+		/*
+		Database checks
+		*/
 		emailModel := user_models.EmailModel{}
-		err := emailModel.ReadByValue(db, strings.ToLower(reqBody.EmailAddress))
+		err := emailModel.ReadByValue(db, strings.ToLower(signupModel.EmailAddress))
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -92,36 +86,44 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 			err := emailLinkerModel.ReadByEmailId(db, emailModel.ID)
 			if err != nil{
 				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
-				json.NewEncoder(rw).Encode(respBodErrMsgModel)
+				responseModel.ServerError("Server error encountered", "")
+				json.NewEncoder(rw).Encode(responseModel)
 				return
 			}
 			// Compare to empty..not empty, means email not available
 			if (emailLinkerModel != user_linker_models.EmailLinkerModel{}){
+				stringModel, err := signupModel.ToStringNoPassword()
+				if err != nil{
+					rw.WriteHeader(http.StatusInternalServerError)
+					responseModel.ServerError("Server error encountered", "")
+					json.NewEncoder(rw).Encode(responseModel)
+					return
+				}
+
 				rw.WriteHeader(http.StatusConflict)
-				respBodErrMsgModel.Conflict("Email Address is not available")
-				json.NewEncoder(rw).Encode(respBodErrMsgModel)
+				responseModel.Conflict("Email Address is not available", stringModel)
+				json.NewEncoder(rw).Encode(responseModel)
 				return	
 			}
 		}
 
 		// Hash the incoming password
-		hashed, err := hash_utils.PasswordHash(reqBody.Password)
+		hashed, err := hash_utils.PasswordHash(signupModel.Password)
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// ----- If it gets here, the email address is available ----- //
 
 
-		dbSession, err := db.Begin()
+		dbSession, err := db.Begin() // begin transaction session
 		if err != nil {
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 		defer dbSession.Rollback()
@@ -130,17 +132,17 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		userModel := user_models.UserModel{}
 		if err := userModel.Create(dbSession); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// ### Email Model ### //
 		if (emailModel == user_models.EmailModel{}){
-			if err := emailModel.Create(dbSession, strings.ToLower(reqBody.EmailAddress)); err != nil{
+			if err := emailModel.Create(dbSession, strings.ToLower(signupModel.EmailAddress)); err != nil{
 				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
-				json.NewEncoder(rw).Encode(respBodErrMsgModel)
+				responseModel.ServerError("Server error encountered", "")
+				json.NewEncoder(rw).Encode(responseModel)
 				return
 			}
 		}
@@ -148,8 +150,8 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		emailLinkerModel := user_linker_models.EmailLinkerModel{}
 		if err := emailLinkerModel.Create(dbSession, userModel.ID, emailModel.ID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -158,36 +160,36 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		passwordModel := user_models.PasswordModel{}
 		if err := passwordModel.Create(dbSession, hashed); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		passwordLinkerModel := user_linker_models.PasswordLinkerModel{}
 		if err := passwordLinkerModel.Create(dbSession, userModel.ID, passwordModel.ID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 
 		// ### Firstname Model ### //
 		firstnameModel := user_models.FirstnameModel{}
-		if err := firstnameModel.ReadByValue(db, reqBody.Firstname); err != nil{
+		if err := firstnameModel.ReadByValue(db, signupModel.Firstname); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// Compare to empty
 		if (firstnameModel == user_models.FirstnameModel{}) {
 			// Create new
-			if err := firstnameModel.Create(dbSession, reqBody.Firstname); err != nil{
+			if err := firstnameModel.Create(dbSession, signupModel.Firstname); err != nil{
 				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
-				json.NewEncoder(rw).Encode(respBodErrMsgModel)
+				responseModel.ServerError("Server error encountered", "")
+				json.NewEncoder(rw).Encode(responseModel)
 				return
 			}
 		}
@@ -195,27 +197,27 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		firstnameLinkerModel := user_linker_models.FirstnameLinkerModel{}
 		if err := firstnameLinkerModel.Create(dbSession, userModel.ID, firstnameModel.ID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// ### Lastname Model ### //
 		lastnameModel := user_models.LastnameModel{}
-		if err := lastnameModel.ReadByValue(db, reqBody.Lastname); err != nil{
+		if err := lastnameModel.ReadByValue(db, signupModel.Lastname); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 		// Compare to empty
 		if (lastnameModel == user_models.LastnameModel{}) {
 			// Create new
-			if err := lastnameModel.Create(dbSession, reqBody.Lastname); err != nil{
+			if err := lastnameModel.Create(dbSession, signupModel.Lastname); err != nil{
 				rw.WriteHeader(http.StatusInternalServerError)
-				respBodErrMsgModel.InternalServerError("Encountered Server Error")
-				json.NewEncoder(rw).Encode(respBodErrMsgModel)
+				responseModel.ServerError("Server error encountered", "")
+				json.NewEncoder(rw).Encode(responseModel)
 				return
 			}
 		}
@@ -223,12 +225,12 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		lastnameLinkerModel := user_linker_models.LastnameLinkerModel{}
 		if err := lastnameLinkerModel.Create(dbSession, userModel.ID, lastnameModel.ID); err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
-		// string fenerator
+		// string generator
 		randStringGen := random_utils.RandomString{}
 
 		// ### UPID Model ### //
@@ -265,8 +267,8 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		// for loop finished and check for upid success
 		if !success{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -306,20 +308,14 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		// for loop finished and check for upid success
 		if !success{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
 
 
-		// Commit the transaction
-		if err := dbSession.Commit(); err != nil{
-			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
-			return
-		}
+		
 
 		// Create an access jwt
 		// Claims only for non-production
@@ -332,8 +328,8 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -348,8 +344,29 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 
 		if err != nil{
 			rw.WriteHeader(http.StatusInternalServerError)
-			respBodErrMsgModel.InternalServerError("Encountered Server Error")
-			json.NewEncoder(rw).Encode(respBodErrMsgModel)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
+			return
+		}
+
+		jwtModel := token_models.JWTModel{
+			AccessToken: accessStringToken,
+			RefreshToken: refreshStringToken,
+		}
+
+		stringTokens, err := jwtModel.Stringify()
+		if err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
+			return
+		}
+
+		// Commit the transaction
+		if err := dbSession.Commit(); err != nil{
+			rw.WriteHeader(http.StatusInternalServerError)
+			responseModel.ServerError("Server error encountered", "")
+			json.NewEncoder(rw).Encode(responseModel)
 			return
 		}
 
@@ -359,11 +376,10 @@ func SignupAuth(db *sql.DB) http.HandlerFunc{
 		rw.Header().Set("X-Refresh-Token", refreshStringToken)
 		rw.WriteHeader(http.StatusCreated) // Success 201 return
 		// Also return tokens in the body
-		json.NewEncoder(rw).Encode(models.ResponseBodyJWTModel{
-			Code: http.StatusCreated,
-			Status: "Created",
-			AccessToken: accessStringToken,
-			RefreshToken: refreshStringToken,
-		})
+		
+
+
+		responseModel.Created("User successfully registered", stringTokens)
+		json.NewEncoder(rw).Encode(responseModel)
 	}
 }
