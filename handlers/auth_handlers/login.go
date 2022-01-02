@@ -23,10 +23,7 @@ func LoginAuth(db *sql.DB) http.HandlerFunc{
 		responseModel := response_models.StatusModel{}
 		loginModel := request_models.LoginModel{}
 		addr := r.RemoteAddr
-		// respBodErrMsgModel := models.ResponseBodyErrorMessageModel{}
 		rw.Header().Set("Content-Type", "application/json")
-
-		// reqBody := models.RequestLoginBodyModel{}
 		if err := json.NewDecoder(r.Body).Decode(&loginModel); err != nil{
 			if err.Error() == "EOF"{
 				rw.WriteHeader(http.StatusBadRequest)
